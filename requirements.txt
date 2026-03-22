@@ -1,0 +1,21 @@
+# HTTP & Data
+requests>=2.31.0
+pandas>=2.1.0
+numpy>=1.26.0
+
+# Environment
+python-dotenv>=1.0.0
+
+# Technical Indicators
+ta>=0.11.0
+
+# Charting / Reports
+plotly>=5.18.0
+jinja2>=3.1.0
+
+# Web Dashboard
+streamlit>=1.30.0
+
+# Utilities
+python-dateutil>=2.8.2
+pytz>=2024.1
