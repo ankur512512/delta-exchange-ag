@@ -12,7 +12,7 @@ load_dotenv()
 # ─────────────────────────────────────────────
 #  API
 # ─────────────────────────────────────────────
-BASE_URL = "https://api.india.delta.exchange/v2"
+BASE_URL = "https://api.india.delta.exchange"
 API_KEY = os.getenv("DELTA_API_KEY", "")
 API_SECRET = os.getenv("DELTA_API_SECRET", "")
 

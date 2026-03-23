@@ -26,7 +26,10 @@ class DeltaClient:
         self.api_key = api_key or config.API_KEY
         self.api_secret = api_secret or config.API_SECRET
         self.session = requests.Session()
-        self.session.headers.update({"Accept": "application/json"})
+        self.session.headers.update({
+            "Accept": "application/json",
+            "User-Agent": "Antigravity-Delta-Trader/1.0"
+        })
 
     # ─────────────────────────────────────────────
     #  Authentication helpers
@@ -138,7 +141,7 @@ class DeltaClient:
         Returns:
             List of candle dicts with keys: time, open, high, low, close, volume
         """
-        data = self._get("/history/candles", params={
+        data = self._get("/v2/history/candles", params={
             "symbol": symbol,
             "resolution": resolution,
             "start": str(start_ts),
@@ -148,12 +151,12 @@ class DeltaClient:
 
     def get_ticker(self, symbol: str) -> dict:
         """Fetch the current ticker for a symbol."""
-        data = self._get(f"/tickers/{symbol}")
+        data = self._get(f"/v2/tickers/{symbol}")
         return data.get("result", {})
 
     def get_products(self) -> list:
         """Fetch all available products."""
-        data = self._get("/products")
+        data = self._get("/v2/products")
         return data.get("result", [])
 
     # ─────────────────────────────────────────────
@@ -165,7 +168,7 @@ class DeltaClient:
         Returns the available balance for the given asset.
         Requires API key/secret.
         """
-        data = self._get("/wallets", authenticated=True)
+        data = self._get("/v2/wallet/balances", authenticated=True)
         wallets = data.get("result", [])
         for w in wallets:
             if w.get("asset_symbol") == asset:
@@ -213,17 +216,17 @@ class DeltaClient:
             body["client_order_id"] = client_order_id
 
         logger.info(f"[LIVE] Placing {side} order for {size} {symbol} @ {limit_price}")
-        return self._post("/orders", body)
+        return self._post("/v2/orders", body)
 
     def cancel_order(self, order_id: str, product_id: int) -> dict:
         """Cancel an open order by ID."""
         if config.MODE == "BACKTEST":
             return {"result": "simulated_cancel"}
-        return self._delete("/orders", body={"id": order_id, "product_id": product_id})
+        return self._delete("/v2/orders", body={"id": order_id, "product_id": product_id})
 
     def get_active_orders(self, symbol: str) -> list:
         """Fetch all active orders for a symbol."""
-        data = self._get("/orders", params={"product_symbol": symbol}, authenticated=True)
+        data = self._get("/v2/orders", params={"product_symbol": symbol}, authenticated=True)
         return data.get("result", [])
 
     # ─────────────────────────────────────────────
@@ -232,7 +235,7 @@ class DeltaClient:
 
     def get_position(self, symbol: str) -> dict:
         """Fetch current open position for a symbol."""
-        data = self._get(f"/positions/margined", params={"product_symbol": symbol}, authenticated=True)
+        data = self._get(f"/v2/positions/margined", params={"product_symbol": symbol}, authenticated=True)
         results = data.get("result", [])
         return results[0] if results else {}
 
@@ -240,4 +243,4 @@ class DeltaClient:
         """Emergency: close all open positions."""
         if config.MODE == "BACKTEST":
             return {"result": "simulated_close_all"}
-        return self._post("/positions/close_all", {})
+        return self._post("/v2/positions/close_all", {})
