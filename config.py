@@ -51,6 +51,9 @@ MAX_RISK_PER_TRADE = 0.003
 # Initial simulated portfolio value (USD) for backtesting
 INITIAL_CAPITAL = 10_000.0
 
+# Minimum trade size in BTC (Delta India minimum for some pairs)
+MIN_TRADE_SIZE_BTC = 0.001
+
 # ─────────────────────────────────────────────
 #  Data Cache
 # ─────────────────────────────────────────────

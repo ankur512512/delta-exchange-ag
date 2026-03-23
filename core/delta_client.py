@@ -209,9 +209,9 @@ class DeltaClient:
         if limit_price is not None:
             body["limit_price"] = str(limit_price)
         if stop_loss is not None:
-            body["stop_loss_price"] = str(stop_loss)
+            body["bracket_stop_loss_price"] = str(stop_loss)
         if take_profit is not None:
-            body["take_profit_price"] = str(take_profit)
+            body["bracket_take_profit_price"] = str(take_profit)
         if client_order_id is not None:
             body["client_order_id"] = client_order_id
 

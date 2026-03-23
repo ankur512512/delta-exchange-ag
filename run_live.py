@@ -148,25 +148,49 @@ def main():
             # Check for entry signals
             if last_signal == Signal.BUY and current_size <= 0:
                 sl_price = sizer.suggested_stop_loss(current_price, "long", atr)
-                size = sizer.calculate_size(current_price, sl_price)
+                size_btc = sizer.calculate_size(current_price, sl_price)
                 
-                logger.info(f"🚀 BUY SIGNAL DETECTED | Size: {size:.4f} | SL: {sl_price:.2f}")
-                if config.MODE == "LIVE" and not args.dry_run:
-                    client.place_order(args.symbol, "buy", size, "market_order", stop_loss=sl_price)
-                    _log_live_trade(args.symbol, "BUY", size, current_price, sl_price)
+                # Check against minimum trade size (0.001 BTC as suggested by user)
+                if size_btc < config.MIN_TRADE_SIZE_BTC:
+                    logger.warning(f"Position size {size_btc:.6f} BTC is below minimum {config.MIN_TRADE_SIZE_BTC} BTC. Skipping.")
+                    time.sleep(10)
+                    continue
+
+                # Delta BTCUSD expects size in integer contracts ($1 notional each)
+                size_contracts = int(size_btc * current_price)
+                
+                if size_contracts > 0:
+                    logger.info(f"🚀 BUY SIGNAL DETECTED | Size: {size_btc:.4f} BTC ({size_contracts} contracts) | SL: {sl_price:.2f}")
+                    if config.MODE == "LIVE" and not args.dry_run:
+                        client.place_order(args.symbol, "buy", size_contracts, "market_order", stop_loss=sl_price)
+                        _log_live_trade(args.symbol, "BUY", size_contracts, current_price, sl_price)
+                    else:
+                        logger.info("[DRY-RUN] No real order placed.")
                 else:
-                    logger.info("[DRY-RUN] No real order placed.")
+                    logger.warning(f"Position size {size_btc:.6f} BTC results in 0 contracts. Skipping.")
 
             elif last_signal == Signal.SELL and current_size >= 0:
                 sl_price = sizer.suggested_stop_loss(current_price, "short", atr)
-                size = sizer.calculate_size(current_price, sl_price)
+                size_btc = sizer.calculate_size(current_price, sl_price)
                 
-                logger.info(f"🚀 SELL SIGNAL DETECTED | Size: {size:.4f} | SL: {sl_price:.2f}")
-                if config.MODE == "LIVE" and not args.dry_run:
-                    client.place_order(args.symbol, "sell", size, "market_order", stop_loss=sl_price)
-                    _log_live_trade(args.symbol, "SELL", size, current_price, sl_price)
+                # Check against minimum trade size (0.001 BTC)
+                if size_btc < config.MIN_TRADE_SIZE_BTC:
+                    logger.warning(f"Position size {size_btc:.6f} BTC is below minimum {config.MIN_TRADE_SIZE_BTC} BTC. Skipping.")
+                    time.sleep(10)
+                    continue
+
+                # Delta BTCUSD expects size in integer contracts ($1 notional each)
+                size_contracts = int(size_btc * current_price)
+                
+                if size_contracts > 0:
+                    logger.info(f"🚀 SELL SIGNAL DETECTED | Size: {size_btc:.4f} BTC ({size_contracts} contracts) | SL: {sl_price:.2f}")
+                    if config.MODE == "LIVE" and not args.dry_run:
+                        client.place_order(args.symbol, "sell", size_contracts, "market_order", stop_loss=sl_price)
+                        _log_live_trade(args.symbol, "SELL", size_contracts, current_price, sl_price)
+                    else:
+                        logger.info("[DRY-RUN] No real order placed.")
                 else:
-                    logger.info("[DRY-RUN] No real order placed.")
+                    logger.warning(f"Position size {size_btc:.6f} BTC results in 0 contracts. Skipping.")
 
             # ── 5. Wait for Next Candle ─────────────────────
             # Align with the clock (e.g. if 5m, wait until 00:00, 05:00, etc.)
