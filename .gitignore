@@ -34,3 +34,6 @@ Thumbs.db
 
 # Streamlit
 .streamlit/
+
+# Logs
+logs/*
