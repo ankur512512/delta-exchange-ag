@@ -83,15 +83,17 @@ python run_backtest.py --strategy bollinger_bands --symbol BTCUSD --timeframe 5m
 ```
 *Results will save an HTML report in `reports/output/`.*
 
-### Start Live Trading
-Before running real money, verify your settings with `--dry-run`:
+### Start Live Trading (Background)
+Once you are ready for 24/7 execution, use `nohup` to run the bot in the background and redirect output to a human-readable log:
 ```bash
-python run_live.py --strategy bollinger_bands --dry-run
+# Run in background with a clear name (e.g. bot_Mar23_11h59m.log)
+nohup python run_live.py --strategy bollinger_bands > logs/bot_$(date +"%b%d_%Hh%Mm").log 2>&1 &
 ```
-When ready for real execution:
-```bash
-python run_live.py --strategy bollinger_bands
-```
+
+### 📋 Monitoring & Logging
+*   **Live Console View**: `tail -f logs/bot_<DATE>.log`
+*   **Audit Historical Trades**: View `data/live_trades.csv` for a clean list of all successful exchange actions.
+*   **Check Performance**: Use the Streamlit dashboard for a visual summary of the logs.
 
 ### Launch the Dashboard
 Visualize your trading hub and run backtests through a web interface:
