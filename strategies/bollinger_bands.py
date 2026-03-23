@@ -1,11 +1,10 @@
 """
-strategies/bollinger_bands.py — Bollinger Bands + RSI filter strategy (Falling Knife Protection).
+strategies/bollinger_bands.py — Aggressive Mean Reversion (Bollinger Bands).
 
-Entry Logic (Conservative):
-  - Long:  Price was below Lower Band + RSI < 35. WAIT for RSI to move ABOVE 35 to buy.
-  - Short: Price was above Upper Band + RSI > 65. WAIT for RSI to move BELOW 65 to sell.
-
-This prevents entering during a vertical crash and waits for the first sign of a bounce.
+Entry Logic (Aggressive):
+  - Long:  Price close below Lower Band. Immediate buy on next candle.
+  - Short: Price close above Upper Band. Immediate sell on next candle.
+  - Exit:  Closes current position as soon as price touches the OTHER band.
 """
 import logging
 from collections import deque
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class BollingerBandsStrategy(BaseStrategy):
-    """Bollinger Bands mean-reversion with RSI 'Cross-Back' confirmation."""
+    """Aggressive Bollinger Bands Mean Reversion."""
 
     name = "bollinger_bands"
 
@@ -44,10 +43,6 @@ class BollingerBandsStrategy(BaseStrategy):
         self._prev_close: float = 0.0
         self.last_atr: float = 0.0
 
-        # Falling Knife Protection Flags
-        self._waiting_for_long_rebound:  bool = False
-        self._waiting_for_short_rebound: bool = False
-
     def reset(self):
         """Clear all rolling state for a fresh backtest run."""
         self._closes.clear()
@@ -55,8 +50,6 @@ class BollingerBandsStrategy(BaseStrategy):
         self._lows.clear()
         self._prev_close = 0.0
         self.last_atr = 0.0
-        self._waiting_for_long_rebound = False
-        self._waiting_for_short_rebound = False
 
     def on_candle(self, candle: dict) -> Signal:
         """Process one candle and return BUY / SELL / HOLD."""
@@ -86,30 +79,20 @@ class BollingerBandsStrategy(BaseStrategy):
         rsi = self._compute_rsi(closes_list)
         self.last_atr = self._compute_atr()
 
-        # ── Signal Logic with Falling Knife Protection ─────────────────
+        # ── Signal Logic (Aggressive Mean Reversion) ─────────────────
         final_signal = Signal.HOLD
 
-        # LONG Logic
-        if close < lower and rsi < self.rsi_oversold:
-            if not self._waiting_for_long_rebound:
-                logger.debug(f"LONG Setup triggered (Oversold: {rsi:.1f}). Waiting for rebound.")
-                self._waiting_for_long_rebound = True
+        # Entry/Exit Logic:
+        # Long when price is below lower band.
+        # Short when price is above upper band.
+        # The engine naturally handles 'flipping' (exiting at opposite band).
         
-        if self._waiting_for_long_rebound and rsi >= self.rsi_oversold:
-            logger.info(f"BUY signal (Rebound confirmed: RSI {rsi:.1f} crossed back above {self.rsi_oversold})")
+        if close < lower:
+            # Optional: could still use rsi < oversold as a filter, but user asked for aggressive.
+            # We'll stick to pure BB touch for maximum aggression.
             final_signal = Signal.BUY
-            self._waiting_for_long_rebound = False
-
-        # SHORT Logic
-        if close > upper and rsi > self.rsi_overbought:
-            if not self._waiting_for_short_rebound:
-                logger.debug(f"SHORT Setup triggered (Overbought: {rsi:.1f}). Waiting for rebound.")
-                self._waiting_for_short_rebound = True
-        
-        if self._waiting_for_short_rebound and rsi <= self.rsi_overbought:
-            logger.info(f"SELL signal (Rebound confirmed: RSI {rsi:.1f} crossed back below {self.rsi_overbought})")
+        elif close > upper:
             final_signal = Signal.SELL
-            self._waiting_for_short_rebound = False
 
         self._prev_close = close
         return final_signal
@@ -146,5 +129,5 @@ class BollingerBandsStrategy(BaseStrategy):
             "rsi_oversold":   self.rsi_oversold,
             "rsi_overbought": self.rsi_overbought,
             "atr_period":     self.atr_period,
-            "version":        "falling_knife_protection",
+            "version":        "aggressive",
         }

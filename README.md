@@ -94,20 +94,39 @@ python run_live.py --strategy bollinger_bands
 ```
 
 ### Launch the Dashboard
-Visualize your trading hub:
+Visualize your trading hub and run backtests through a web interface:
 ```bash
 streamlit run dashboard/app.py
 ```
 
 ---
 
-## 🛡️ Strategy: Bollinger Bands + RSI "Cross-Back"
+## 🖥️ Streamlit Dashboard Features
 
-The included `bollinger_bands` strategy is designed to avoid "Catching the Falling Knife."
+The project includes a powerful web dashboard for both research and monitoring:
 
-1.  **Setup**: Awaits price to touch or exceed the **Bollinger Bands** (2.0 SD) while **RSI** is in extreme oversold (<35) or overbought (>65) territory.
-2.  **Confirmation**: The bot **does not** enter immediately. It waits for the RSI to "cross back" into the neutral zone (e.g., RSI crosses back ABOVE 35 for a Long). This confirms the momentum has stalled and a reversal has started.
-3.  **Exit**: Uses a dynamic **ATR-based Stop Loss** (Average True Range) to adjust for market volatility.
+### 1. 📊 Backtest Engine Tab
+*   **Interactive Parameters**: Configure Symbol, Timeframe, Date Range, and Risk directly from the UI.
+*   **One-Click Simulation**: Execute backtests without touching the command line.
+*   **Performance Metrics**: View Total Return, Win Rate, P&L, and Sharpe Ratio instantly.
+*   **Visual Equity Curve**: Interactive Plotly charts to visualize drawdown and growth.
+*   **Detailed Trade Log**: Expandable table of every entry, exit, and P&L result.
+
+### 2. 📡 Live Monitor Tab
+*   **Real-Time Account Status**: View your available USD balance and open position details (contracts, entry price, unrealized P&L).
+*   **Bot Activity Tracking**: Monitor the latest actions taken by `run_live.py` via the local `live_trades.csv` log.
+*   **Live Charts**: Scatter plots of recent entries and exits on a price timeline.
+*   **Quick Refresh**: Sync with the Delta Exchange API at any time to get the latest portfolio status.
+
+---
+
+## 🛡️ Strategy: Aggressive Bollinger Bands Mean Reversion
+
+The `bollinger_bands` strategy is now configured for high-frequency mean reversion.
+
+1.  **Entry**: Signals a **BUY** as soon as a candle closes below the **Lower Band** and a **SELL** as soon as it closes above the **Upper Band**.
+2.  **Exit (Band-to-Band)**: Long positions are automatically closed (and potentially flipped) when the price touches the **Upper Band**. Similarly for short positions at the **Lower Band**.
+3.  **Risk**: Uses a dynamic **ATR-based Stop Loss** to protect against runaway trends.
 
 ---
 

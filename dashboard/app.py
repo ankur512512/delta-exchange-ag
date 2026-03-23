@@ -106,14 +106,49 @@ with tab1:
         st.success(f"Simulation Complete: {len(result.trade_log.closed_trades)} trades simulated.")
         
         # Performance Summary Cards
-        k1, k2, k3, k4 = st.columns(4)
+        k1, k2, k3, k4, k5 = st.columns(5)
         k1.metric("Total Return", f"{metrics['total_return_pct']}%")
         k2.metric("Total P&L", f"${metrics['total_pnl']:,.2f}")
         k3.metric("Win Rate", f"{metrics['win_rate_pct']}%")
         k4.metric("Sharpe Ratio", str(metrics['sharpe_ratio']))
+        k5.metric("Max Drawdown", f"{metrics['max_drawdown_pct']}%")
+        
+        # Performance Details Table
+        st.markdown("### 📈 Performance Summary")
+        m1, m2, m3, m4 = st.columns(4)
+        
+        with m1:
+            st.markdown("**Overview**")
+            st.caption(f"Total Trades: {metrics['total_trades']}")
+            st.caption(f"Winning Trades: {metrics['winning_trades']}")
+            st.caption(f"Losing Trades: {metrics['losing_trades']}")
+            st.caption(f"Profit Factor: {metrics['profit_factor']}")
+        
+        with m2:
+            st.markdown("**P&L Details**")
+            st.caption(f"Initial Capital: ${metrics['initial_capital']:,.2f}")
+            st.caption(f"Final Capital: ${metrics['final_capital']:,.2f}")
+            st.caption(f"Annualized Return: {metrics['annualised_return_pct']}%")
+        
+        with m3:
+            st.markdown("**Per-Trade Stats**")
+            st.caption(f"Avg Trade P&L: ${metrics['avg_trade_pnl']:,.2f}")
+            st.caption(f"Avg Winner: ${metrics['avg_winner']:,.2f}")
+            st.caption(f"Avg Loser: ${metrics['avg_loser']:,.2f}")
+            st.caption(f"Avg Holding: {metrics['avg_holding_hours']}h")
+            
+        with m4:
+            st.markdown("**Risk Analysis**")
+            st.caption(f"Max DD (USD): ${metrics['max_drawdown_usd']:,.2f}")
+            st.caption(f"Max DD Duration: {metrics['max_drawdown_duration_candles']} candles")
+            st.caption(f"Max Win Streak: {metrics['max_consecutive_wins']}")
+            st.caption(f"Max Loss Streak: {metrics['max_consecutive_losses']}")
         
         # Charts
         st.plotly_chart(go.Figure(data=[go.Scatter(x=result.equity_curve.index, y=result.equity_curve.values, line=dict(color="#00d4aa"))]).update_layout(title="Equity Curve", template="plotly_dark"), use_container_width=True)
+        
+        with st.expander("📖 View Equity History Table"):
+            st.dataframe(result.equity_curve.rename("Wallet Balance"), use_container_width=True)
         
         # Trade Log
         st.markdown("### Detailed Trade Log")
