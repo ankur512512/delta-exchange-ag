@@ -203,30 +203,39 @@ def main():
             # If we have an open position, poll more frequently (HEARTBEAT) to catch band touches
             if current_size != 0:
                 target_p = strategy.last_upper if current_size > 0 else strategy.last_lower
-                logger.info(f"💓 HEARTBEAT | Starting 3s intra-candle monitor (Target: ${target_p:,.2f})")
+                logger.info(f"💓 HEARTBEAT | Starting 3s monitor (Target: ${target_p:,.2f})")
 
-            while time.time() < next_run_ts - 5: # Stop polling 5s before next candle
+            tick_count = 0
+            while time.time() < next_run_ts - 2: # Stop polling 2s before next candle
                 if current_size == 0:
                     time.sleep(10) # No position, just wait normally
                     continue
                 
                 time.sleep(3) # Poll every 3s
+                tick_count += 1
                 
                 try:
                     ticker = client.get_ticker(args.symbol)
-                    lp = float(ticker.get("last_price", 0))
+                    # Try multiple potential keys from the Delta V2 ticker response
+                    lp = float(ticker.get("mark_price") or ticker.get("last_price") or ticker.get("close") or 0)
+                    
                     if lp == 0: continue
+                    
+                    # Log the heartbeat price once every 30 seconds to keep logs clean but informative
+                    if tick_count % 10 == 0:
+                        dir_label = "UPPER" if current_size > 0 else "LOWER"
+                        logger.info(f"  [TICK] ${lp:,.2f} | target {dir_label}: ${target_p:,.2f}")
                     
                     # Check for exit signals (Opposite Band)
                     exit_triggered = False
-                    if current_size > 0 and lp >= strategy.last_upper:
-                        logger.info(f"🎯 TARGET HIT (Intra-candle Upper Band): ${lp} >= ${strategy.last_upper:.2f}")
+                    if current_size > 0 and lp >= target_p:
+                        logger.info(f"🎯 TARGET HIT (Intra-candle Upper Band): ${lp} >= ${target_p:.2f}")
                         if config.MODE == "LIVE" and not args.dry_run:
                             client.place_order(args.symbol, "sell", abs(current_size), "market_order")
                             _log_live_trade(args.symbol, "EXIT_LONG_TP", abs(current_size), lp, 0)
                         exit_triggered = True
-                    elif current_size < 0 and lp <= strategy.last_lower:
-                        logger.info(f"🎯 TARGET HIT (Intra-candle Lower Band): ${lp} <= ${strategy.last_lower:.2f}")
+                    elif current_size < 0 and lp <= target_p:
+                        logger.info(f"🎯 TARGET HIT (Intra-candle Lower Band): ${lp} <= ${target_p:.2f}")
                         if config.MODE == "LIVE" and not args.dry_run:
                             client.place_order(args.symbol, "buy", abs(current_size), "market_order")
                             _log_live_trade(args.symbol, "EXIT_SHORT_TP", abs(current_size), lp, 0)
