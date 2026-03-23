@@ -36,4 +36,4 @@ Thumbs.db
 .streamlit/
 
 # Logs
-logs/*
+# logs/*
