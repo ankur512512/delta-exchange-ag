@@ -192,14 +192,54 @@ def main():
                 else:
                     logger.warning(f"Position size {size_btc:.6f} BTC results in 0 contracts. Skipping.")
 
-            # ── 5. Wait for Next Candle ─────────────────────
+            # ── 5. Heartbeat & Wait for Next Candle ─────────────────────
             # Align with the clock (e.g. if 5m, wait until 00:00, 05:00, etc.)
             seconds_into_candle = now_ist.minute % int(args.timeframe.replace("m", "")) * 60 + now_ist.second
             wait_time = max(candle_secs - seconds_into_candle + 2, 10) # +2s for buffer
+            next_run_ts = time.time() + wait_time
             
-            next_run = (datetime.now(ist_tz) + timedelta(seconds=wait_time)).strftime("%H:%M:%S")
-            logger.info(f"WAIT | Next check at {next_run} IST...")
-            time.sleep(wait_time)
+            logger.info(f"WAIT | Next candle check at {(now_ist + timedelta(seconds=wait_time)).strftime('%H:%M:%S')} IST...")
+            
+            # If we have an open position, poll more frequently (HEARTBEAT) to catch band touches
+            while time.time() < next_run_ts - 5: # Stop polling 5s before next candle
+                if current_size == 0:
+                    time.sleep(10) # No position, just wait normally
+                    continue
+                
+                time.sleep(3) # Poll every 3s
+                
+                try:
+                    ticker = client.get_ticker(args.symbol)
+                    lp = float(ticker.get("last_price", 0))
+                    if lp == 0: continue
+                    
+                    # Check for exit signals (Opposite Band)
+                    exit_triggered = False
+                    if current_size > 0 and lp >= strategy.last_upper:
+                        logger.info(f"🎯 TARGET HIT (Intra-candle Upper Band): ${lp} >= ${strategy.last_upper:.2f}")
+                        if config.MODE == "LIVE" and not args.dry_run:
+                            client.place_order(args.symbol, "sell", abs(current_size), "market_order")
+                            _log_live_trade(args.symbol, "EXIT_LONG_TP", abs(current_size), lp, 0)
+                        exit_triggered = True
+                    elif current_size < 0 and lp <= strategy.last_lower:
+                        logger.info(f"🎯 TARGET HIT (Intra-candle Lower Band): ${lp} <= ${strategy.last_lower:.2f}")
+                        if config.MODE == "LIVE" and not args.dry_run:
+                            client.place_order(args.symbol, "buy", abs(current_size), "market_order")
+                            _log_live_trade(args.symbol, "EXIT_SHORT_TP", abs(current_size), lp, 0)
+                        exit_triggered = True
+                    
+                    if exit_triggered:
+                        current_size = 0 # Prevent double exit
+                        break # Break heartbeat to wait for next full candle sync
+                        
+                except Exception as e:
+                    logger.warning(f"Heartbeat monitor error: {e}")
+                    time.sleep(5)
+            
+            # Final sleep until the exact next candle start
+            final_wait = max(next_run_ts - time.time(), 0)
+            if final_wait > 0:
+                time.sleep(final_wait)
 
     except KeyboardInterrupt:
         logger.info("\nBot stopped manually. Safe trading!")

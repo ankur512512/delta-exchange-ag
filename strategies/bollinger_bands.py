@@ -42,6 +42,8 @@ class BollingerBandsStrategy(BaseStrategy):
         self._lows:   Deque[float] = deque(maxlen=atr_period + 1)
         self._prev_close: float = 0.0
         self.last_atr: float = 0.0
+        self.last_upper: float = 0.0
+        self.last_lower: float = 0.0
 
     def reset(self):
         """Clear all rolling state for a fresh backtest run."""
@@ -75,6 +77,8 @@ class BollingerBandsStrategy(BaseStrategy):
         std         = variance ** 0.5
         upper       = sma + self.bb_std_dev * std
         lower       = sma - self.bb_std_dev * std
+        self.last_upper = upper
+        self.last_lower = lower
 
         rsi = self._compute_rsi(closes_list)
         self.last_atr = self._compute_atr()
