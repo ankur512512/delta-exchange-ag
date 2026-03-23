@@ -164,6 +164,7 @@ def main():
                     if config.MODE == "LIVE" and not args.dry_run:
                         client.place_order(args.symbol, "buy", size_contracts, "market_order", stop_loss=sl_price)
                         _log_live_trade(args.symbol, "BUY", size_contracts, current_price, sl_price)
+                        current_size = float(size_contracts) # Update locally immediately
                     else:
                         logger.info("[DRY-RUN] No real order placed.")
                 else:
@@ -187,6 +188,7 @@ def main():
                     if config.MODE == "LIVE" and not args.dry_run:
                         client.place_order(args.symbol, "sell", size_contracts, "market_order", stop_loss=sl_price)
                         _log_live_trade(args.symbol, "SELL", size_contracts, current_price, sl_price)
+                        current_size = -float(size_contracts) # Update locally immediately
                     else:
                         logger.info("[DRY-RUN] No real order placed.")
                 else:
@@ -221,8 +223,8 @@ def main():
                     
                     if lp == 0: continue
                     
-                    # Log the heartbeat price once every 30 seconds to keep logs clean but informative
-                    if tick_count % 10 == 0:
+                    # Log the heartbeat price once every 15 seconds to keep logs clean
+                    if tick_count % 5 == 0:
                         dir_label = "UPPER" if current_size > 0 else "LOWER"
                         logger.info(f"  [TICK] ${lp:,.2f} | target {dir_label}: ${target_p:,.2f}")
                     
