@@ -201,6 +201,10 @@ def main():
             logger.info(f"WAIT | Next candle check at {(now_ist + timedelta(seconds=wait_time)).strftime('%H:%M:%S')} IST...")
             
             # If we have an open position, poll more frequently (HEARTBEAT) to catch band touches
+            if current_size != 0:
+                target_p = strategy.last_upper if current_size > 0 else strategy.last_lower
+                logger.info(f"💓 HEARTBEAT | Starting 3s intra-candle monitor (Target: ${target_p:,.2f})")
+
             while time.time() < next_run_ts - 5: # Stop polling 5s before next candle
                 if current_size == 0:
                     time.sleep(10) # No position, just wait normally
