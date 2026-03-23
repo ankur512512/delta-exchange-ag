@@ -15,6 +15,7 @@ jinja2>=3.1.0
 
 # Web Dashboard
 streamlit>=1.30.0
+packaging<25,>=20
 
 # Utilities
 python-dateutil>=2.8.2

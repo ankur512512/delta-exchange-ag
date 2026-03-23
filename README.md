@@ -128,6 +128,24 @@ The `bollinger_bands` strategy is now configured for high-frequency mean reversi
 2.  **Exit (Band-to-Band)**: Long positions are automatically closed (and potentially flipped) when the price touches the **Upper Band**. Similarly for short positions at the **Lower Band**.
 3.  **Risk**: Uses a dynamic **ATR-based Stop Loss** to protect against runaway trends.
 
+## ⚙️ Configuration & Tuning
+
+You can customize the bot's behavior by editing **`config.py`** or passing CLI arguments.
+
+### 🏠 Global Parameters (`config.py`)
+*   **🕰️ Timeframes**: Supported values: `1m`, `3m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`, `6h`, `1d`, `1w`.
+*   **⚖️ Risk Management**:
+    *   `MAX_RISK_PER_TRADE`: Percentage of your portfolio to risk per entry (Default: 0.003 = 0.3%).
+    *   `MIN_TRADE_SIZE_BTC`: Minimum quantity per trade (Default: 0.001 BTC). If your calculated size is smaller, the bot will skip the signal.
+*   **💱 Symbols**: Default: `BTCUSD`. Also supports `ETHUSD` or other pairs on Delta Exchange India.
+
+### 🧠 Strategy parameters (`strategies/bollinger_bands.py`)
+Fine-tune how indicators respond to volatility:
+*   **BB Period (20)**: Lookback period for the Bollinger middle band (SMA).
+*   **BB Std Dev (2.0)**: Number of standard deviations for the bands. Increase (e.g., 2.5) for fewer, more extreme entries.
+*   **ATR Period (14)**: Lookback for the Average True Range, used in calculating stop-loss buffers.
+*   **RSI Period (14)**: Standard RSI lookback (now displayed for reference in dashboard analytics).
+
 ---
 
 ## ⚠️ Important Notes (For Live Trading)
