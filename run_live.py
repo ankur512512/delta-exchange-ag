@@ -244,36 +244,22 @@ def main():
                             
                     # Log the heartbeat price once every 15 seconds to keep logs clean
                     if tick_count % 5 == 0:
-                        dir_label = "UPPER" if current_size > 0 else "LOWER"
-                        logger.info(f"  [TICK] ${lp:,.2f} | target {dir_label}: ${target_p:,.2f} | current_sl: ${current_sl:,.2f}")
+                        logger.info(f"  [TICK] ${lp:,.2f} | current_sl: ${current_sl:,.2f} (Monitoring for Trail/Close)")
                     
-                    # Check for exit signals (Opposite Band)
+                    # Check for exit signals (ONLY Trailing Stop Loss here)
+                    # Band-to-Band exits are now handled at candle close for higher profit potential
                     exit_triggered = False
-                    reason = ""
-                    
-                    # 1. Band Touch
-                    if current_size > 0 and lp >= target_p:
-                        reason = "Intra-candle Upper Band"
+                    if current_size > 0 and lp <= current_sl:
                         exit_triggered = True
-                    elif current_size < 0 and lp <= target_p:
-                        reason = "Intra-candle Lower Band"
+                    elif current_size < 0 and lp >= current_sl:
                         exit_triggered = True
-                        
-                    # 2. Trailing Stop Loss Hit
-                    if not exit_triggered:
-                        if current_size > 0 and lp <= current_sl:
-                            reason = "Trailing Stop Loss"
-                            exit_triggered = True
-                        elif current_size < 0 and lp >= current_sl:
-                            reason = "Trailing Stop Loss"
-                            exit_triggered = True
                     
                     if exit_triggered:
-                        logger.info(f"🎯 TARGET HIT ({reason}): ${lp:,.2f}")
+                        logger.info(f"🎯 STOP LOSS HIT (Trailing): ${lp:,.2f}")
                         if config.MODE == "LIVE" and not args.dry_run:
                             exit_side = "sell" if current_size > 0 else "buy"
                             client.place_order(args.symbol, exit_side, abs(current_size), "market_order")
-                            _log_live_trade(args.symbol, f"EXIT_{reason.replace(' ', '_').upper()}", abs(current_size), lp, 0)
+                            _log_live_trade(args.symbol, "EXIT_TRAILING_SL", abs(current_size), lp, 0)
                         
                         current_size = 0 # Prevent double exit
                         break # Break heartbeat to wait for next full candle sync
