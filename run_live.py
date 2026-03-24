@@ -78,6 +78,9 @@ def main():
 
     candle_secs = RESOLUTION_SECONDS.get(args.timeframe, 300)
 
+    # State for tracking trailing stop loss across loops
+    current_sl = 0.0
+    
     try:
         while True:
             now_ist = datetime.now(ist_tz)
@@ -95,6 +98,8 @@ def main():
                 pos_label = "NONE"
                 if current_size > 0: pos_label = f"LONG ({current_size})"
                 elif current_size < 0: pos_label = f"SHORT ({abs(current_size)})"
+                else: 
+                    current_sl = 0.0 # Reset SL when no position
                 
                 logger.info(f"SYNC | Wallet: ${balance:,.2f} | Position: {pos_label}")
             except Exception as e:
@@ -144,9 +149,6 @@ def main():
             # ── 4. Execute Trades ───────────────────────────
             sizer = PositionSizer(balance, args.risk / 100)
             atr = strategy.last_atr if hasattr(strategy, "last_atr") and strategy.last_atr > 0 else current_price * 0.01
-            
-            # Local state for tracking SL during this loop
-            current_sl = 0.0
             
             # Check for entry signals
             if last_signal == Signal.BUY and current_size <= 0:
