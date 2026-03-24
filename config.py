@@ -77,3 +77,10 @@ API_REQUEST_DELAY_SECS  = 0.2   # polite delay between paginated requests
 # ─────────────────────────────────────────────
 TRAILING_STOP_ENABLED = True
 TRAILING_STOP_ATR_MULT = 1.5  # Trail distance in ATR units
+
+# ─────────────────────────────────────────────
+#  Strategy Filters
+# ─────────────────────────────────────────────
+RSI_FILTER_ENABLED = True
+RSI_OVERSOLD = 35.0
+RSI_OVERBOUGHT = 65.0

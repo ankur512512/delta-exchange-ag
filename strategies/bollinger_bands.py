@@ -44,14 +44,14 @@ class BollingerBandsStrategy(BaseStrategy):
         self.last_atr: float = 0.0
         self.last_upper: float = 0.0
         self.last_lower: float = 0.0
-        self.trailing_mult: float = config.TRAILING_STOP_ATR_MULT if hasattr(config, "TRAILING_STOP_ATR_MULT") else 1.5
+        self.trailing_mult: float = getattr(config, "TRAILING_STOP_ATR_MULT", 1.5)
 
     def get_trailing_sl(self, side: str, current_sl: float, price: float, atr: float) -> float:
         """
         Calculates a new 'ratcheted' stop-loss based on ATR volatility.
         Should only move in favor of the trade (up for longs, down for shorts).
         """
-        if not config.TRAILING_STOP_ENABLED:
+        if not getattr(config, "TRAILING_STOP_ENABLED", False):
             return current_sl
 
         dist = atr * self.trailing_mult
@@ -100,20 +100,23 @@ class BollingerBandsStrategy(BaseStrategy):
         rsi = self._compute_rsi(closes_list)
         self.last_atr = self._compute_atr()
 
-        # ── Signal Logic (Aggressive Mean Reversion) ─────────────────
+        # ── 3. Signal Generation (AGGRESSIVE + RSI Filter) ────────────────
         final_signal = Signal.HOLD
+        use_rsi = getattr(config, "RSI_FILTER_ENABLED", True)
+        os_level = getattr(config, "RSI_OVERSOLD", 35.0)
+        ob_level = getattr(config, "RSI_OVERBOUGHT", 65.0)
 
-        # Entry/Exit Logic:
-        # Long when price is below lower band.
-        # Short when price is above upper band.
-        # The engine naturally handles 'flipping' (exiting at opposite band).
-        
         if close < lower:
-            # Optional: could still use rsi < oversold as a filter, but user asked for aggressive.
-            # We'll stick to pure BB touch for maximum aggression.
-            final_signal = Signal.BUY
+            # BUY if RSI is enabled and oversold, OR if RSI is disabled
+            if not use_rsi or rsi < os_level:
+                final_signal = Signal.BUY
+                logger.info(f"BUY SIGNAL | Close: {close:.2f} < Lower: {lower:.2f} | RSI: {rsi:.2f}")
+
         elif close > upper:
-            final_signal = Signal.SELL
+            # SELL if RSI is enabled and overbought, OR if RSI is disabled
+            if not use_rsi or rsi > ob_level:
+                final_signal = Signal.SELL
+                logger.info(f"SELL SIGNAL | Close: {close:.2f} > Upper: {upper:.2f} | RSI: {rsi:.2f}")
 
         self._prev_close = close
         return final_signal
@@ -150,5 +153,5 @@ class BollingerBandsStrategy(BaseStrategy):
             "rsi_oversold":   self.rsi_oversold,
             "rsi_overbought": self.rsi_overbought,
             "atr_period":     self.atr_period,
-            "version":        "aggressive",
+            "version":        "aggressive-rsi-filtered",
         }
