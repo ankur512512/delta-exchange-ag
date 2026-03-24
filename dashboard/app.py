@@ -77,8 +77,10 @@ with tab1:
             symbol = st.selectbox("Symbol", ["BTCUSD", "ETHUSD"], index=0)
             timeframe = st.selectbox("Timeframe", list(RESOLUTION_SECONDS.keys()), index=2) # 5m
         with c2:
-            start_date = st.date_input("Start Date", value=datetime.now() - timedelta(days=30))
-            end_date = st.date_input("End Date", value=datetime.now())
+            d_start = datetime.strptime(config.BACKTEST_START, "%Y-%m-%d")
+            d_end   = datetime.strptime(config.BACKTEST_END, "%Y-%m-%d")
+            start_date = st.date_input("Start Date", value=d_start)
+            end_date = st.date_input("End Date", value=d_end)
         with c3:
             initial_capital = st.number_input("Initial Capital (USD)", value=10_000.0)
             max_risk_pct = st.slider("Max Risk (%)", 0.1, 2.0, 0.3) / 100

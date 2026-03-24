@@ -142,6 +142,15 @@ class BacktestEngine:
                         f"Portfolio=${portfolio:,.2f}"
                     )
                     current_trade = None
+                else:
+                    # ── 2b. Update Trailing Stop Loss if enabled ────────────────
+                    if hasattr(self.strategy, "get_trailing_sl"):
+                        atr = self.strategy.last_atr if hasattr(self.strategy, "last_atr") else close_price * 0.01
+                        new_sl = self.strategy.get_trailing_sl(
+                            current_trade.side, current_trade.stop_loss_price, close_price, atr
+                        )
+                        if new_sl != current_trade.stop_loss_price:
+                            current_trade.stop_loss_price = new_sl
 
             # ── 3. Feed candle to strategy → get new signal
             candle_dict = {

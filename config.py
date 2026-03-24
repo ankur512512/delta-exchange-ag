@@ -39,8 +39,8 @@ TIMEFRAME = "5m"
 #  Backtest Date Range  (YYYY-MM-DD strings)
 # ─────────────────────────────────────────────
 from datetime import datetime, timedelta
-BACKTEST_END   = datetime.now().strftime("%Y-%m-%d")
-BACKTEST_START = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
+BACKTEST_START = "2024-09-22"
+BACKTEST_END   = "2025-09-24"
 
 # ─────────────────────────────────────────────
 #  Risk Management
@@ -71,3 +71,9 @@ REPORTS_DIR = "reports/output"
 # ─────────────────────────────────────────────
 MAX_CANDLES_PER_REQUEST = 2000   # Delta Exchange hard limit
 API_REQUEST_DELAY_SECS  = 0.2   # polite delay between paginated requests
+
+# ─────────────────────────────────────────────
+#  Risk Management (Trailing SL)
+# ─────────────────────────────────────────────
+TRAILING_STOP_ENABLED = True
+TRAILING_STOP_ATR_MULT = 1.5  # Trail distance in ATR units

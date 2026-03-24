@@ -145,6 +145,9 @@ def main():
             sizer = PositionSizer(balance, args.risk / 100)
             atr = strategy.last_atr if hasattr(strategy, "last_atr") and strategy.last_atr > 0 else current_price * 0.01
             
+            # Local state for tracking SL during this loop
+            current_sl = 0.0
+            
             # Check for entry signals
             if last_signal == Signal.BUY and current_size <= 0:
                 sl_price = sizer.suggested_stop_loss(current_price, "long", atr)
@@ -165,6 +168,7 @@ def main():
                         client.place_order(args.symbol, "buy", size_contracts, "market_order", stop_loss=sl_price)
                         _log_live_trade(args.symbol, "BUY", size_contracts, current_price, sl_price)
                         current_size = float(size_contracts) # Update locally immediately
+                        current_sl = sl_price
                     else:
                         logger.info("[DRY-RUN] No real order placed.")
                 else:
@@ -189,10 +193,16 @@ def main():
                         client.place_order(args.symbol, "sell", size_contracts, "market_order", stop_loss=sl_price)
                         _log_live_trade(args.symbol, "SELL", size_contracts, current_price, sl_price)
                         current_size = -float(size_contracts) # Update locally immediately
+                        current_sl = sl_price
                     else:
                         logger.info("[DRY-RUN] No real order placed.")
                 else:
                     logger.warning(f"Position size {size_btc:.6f} BTC results in 0 contracts. Skipping.")
+
+            # If we already had a position from previous loop, try to get its SL from position data or config
+            if current_size != 0 and current_sl == 0:
+                # Try to guess initial SL if we didn't just place the order
+                current_sl = current_price * (0.99 if current_size > 0 else 1.01)
 
             # ── 5. Heartbeat & Wait for Next Candle ─────────────────────
             # Align with the clock (e.g. if 5m, wait until 00:00, 05:00, etc.)
@@ -223,27 +233,48 @@ def main():
                     
                     if lp == 0: continue
                     
+                    # ── Trailing SL Check ──────────────────────
+                    if hasattr(strategy, "get_trailing_sl"):
+                        side = "long" if current_size > 0 else "short"
+                        # Use local atr if available from strategy
+                        new_sl = strategy.get_trailing_sl(side, current_sl, lp, strategy.last_atr)
+                        if new_sl != current_sl:
+                            logger.info(f"  [TRAIL] SL Ratchet: ${current_sl:,.2f} -> ${new_sl:,.2f}")
+                            current_sl = new_sl
+                            
                     # Log the heartbeat price once every 15 seconds to keep logs clean
                     if tick_count % 5 == 0:
                         dir_label = "UPPER" if current_size > 0 else "LOWER"
-                        logger.info(f"  [TICK] ${lp:,.2f} | target {dir_label}: ${target_p:,.2f}")
+                        logger.info(f"  [TICK] ${lp:,.2f} | target {dir_label}: ${target_p:,.2f} | current_sl: ${current_sl:,.2f}")
                     
                     # Check for exit signals (Opposite Band)
                     exit_triggered = False
+                    reason = ""
+                    
+                    # 1. Band Touch
                     if current_size > 0 and lp >= target_p:
-                        logger.info(f"🎯 TARGET HIT (Intra-candle Upper Band): ${lp} >= ${target_p:.2f}")
-                        if config.MODE == "LIVE" and not args.dry_run:
-                            client.place_order(args.symbol, "sell", abs(current_size), "market_order")
-                            _log_live_trade(args.symbol, "EXIT_LONG_TP", abs(current_size), lp, 0)
+                        reason = "Intra-candle Upper Band"
                         exit_triggered = True
                     elif current_size < 0 and lp <= target_p:
-                        logger.info(f"🎯 TARGET HIT (Intra-candle Lower Band): ${lp} <= ${target_p:.2f}")
-                        if config.MODE == "LIVE" and not args.dry_run:
-                            client.place_order(args.symbol, "buy", abs(current_size), "market_order")
-                            _log_live_trade(args.symbol, "EXIT_SHORT_TP", abs(current_size), lp, 0)
+                        reason = "Intra-candle Lower Band"
                         exit_triggered = True
+                        
+                    # 2. Trailing Stop Loss Hit
+                    if not exit_triggered:
+                        if current_size > 0 and lp <= current_sl:
+                            reason = "Trailing Stop Loss"
+                            exit_triggered = True
+                        elif current_size < 0 and lp >= current_sl:
+                            reason = "Trailing Stop Loss"
+                            exit_triggered = True
                     
                     if exit_triggered:
+                        logger.info(f"🎯 TARGET HIT ({reason}): ${lp:,.2f}")
+                        if config.MODE == "LIVE" and not args.dry_run:
+                            exit_side = "sell" if current_size > 0 else "buy"
+                            client.place_order(args.symbol, exit_side, abs(current_size), "market_order")
+                            _log_live_trade(args.symbol, f"EXIT_{reason.replace(' ', '_').upper()}", abs(current_size), lp, 0)
+                        
                         current_size = 0 # Prevent double exit
                         break # Break heartbeat to wait for next full candle sync
                         

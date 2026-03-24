@@ -9,7 +9,7 @@ Entry Logic (Aggressive):
 import logging
 from collections import deque
 from typing import Deque
-
+import config
 from strategies.base_strategy import BaseStrategy, Signal
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,23 @@ class BollingerBandsStrategy(BaseStrategy):
         self.last_atr: float = 0.0
         self.last_upper: float = 0.0
         self.last_lower: float = 0.0
+        self.trailing_mult: float = config.TRAILING_STOP_ATR_MULT if hasattr(config, "TRAILING_STOP_ATR_MULT") else 1.5
+
+    def get_trailing_sl(self, side: str, current_sl: float, price: float, atr: float) -> float:
+        """
+        Calculates a new 'ratcheted' stop-loss based on ATR volatility.
+        Should only move in favor of the trade (up for longs, down for shorts).
+        """
+        if not config.TRAILING_STOP_ENABLED:
+            return current_sl
+
+        dist = atr * self.trailing_mult
+        if side == "long":
+            new_sl = price - dist
+            return max(current_sl, new_sl)
+        else:
+            new_sl = price + dist
+            return min(current_sl, new_sl)
 
     def reset(self):
         """Clear all rolling state for a fresh backtest run."""

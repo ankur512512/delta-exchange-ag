@@ -136,17 +136,17 @@ You can customize the bot's behavior by editing **`config.py`** or passing CLI a
 
 ### 🏠 Global Parameters (`config.py`)
 *   **🕰️ Timeframes**: Supported values: `1m`, `3m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`, `6h`, `1d`, `1w`.
+*   **📅 Backtest Range**: Default is now set to **2024-09-22** → **2025-09-24**.
 *   **⚖️ Risk Management**:
     *   `MAX_RISK_PER_TRADE`: Percentage of your portfolio to risk per entry (Default: 0.003 = 0.3%).
-    *   `MIN_TRADE_SIZE_BTC`: Minimum quantity per trade (Default: 0.001 BTC). If your calculated size is smaller, the bot will skip the signal.
-*   **💱 Symbols**: Default: `BTCUSD`. Also supports `ETHUSD` or other pairs on Delta Exchange India.
+    *   `MIN_TRADE_SIZE_BTC`: Minimum quantity per trade (Default: 0.001 BTC).
+*   **🛡️ Trailing Stop Loss**: Enabled by default (`TRAILING_STOP_ENABLED = True`) with a **1.5x ATR** trail.
 
 ### 🧠 Strategy parameters (`strategies/bollinger_bands.py`)
 Fine-tune how indicators respond to volatility:
 *   **BB Period (20)**: Lookback period for the Bollinger middle band (SMA).
-*   **BB Std Dev (2.0)**: Number of standard deviations for the bands. Increase (e.g., 2.5) for fewer, more extreme entries.
-*   **ATR Period (14)**: Lookback for the Average True Range, used in calculating stop-loss buffers.
-*   **RSI Period (14)**: Standard RSI lookback (now displayed for reference in dashboard analytics).
+*   **BB Std Dev (2.0)**: Number of standard deviations for the bands.
+*   **TRAILING_STOP_ATR_MULT (1.5)**: The distance your stop loss 'ratchets' behind the current price.
 
 ---
 
