@@ -27,7 +27,8 @@ Delta Antigravity is a robust, event-driven algorithmic trading system designed 
 │   ├── backtest_engine.py # Event-loop for simulations
 │   └── data_fetcher.py # Paginated historical data downloader
 ├── strategies/         # Strategy implementations
-│   └── bollinger_bands.py # Primary mean-reversion strategy
+│   ├── bollinger_bands.py # Primary mean-reversion strategy
+│   └── supertrend_dema.py # Trend-following strategy using Supertrend and DEMA
 ├── dashboard/          # Streamlit UI
 │   └── app.py          # Dashboard entry point
 ├── data/               # Local OHLCV cache and trade logs
@@ -77,9 +78,14 @@ MODE="LIVE"  # Change to "BACKTEST" to disable real orders via config
 ## 📈 How to Run
 
 ### Run a Backtest
-Simulate the Bollinger Bands strategy on BTCUSD for the last 30 days:
+Simulate the Bollinger Bands strategy on BTCUSD:
 ```bash
 python run_backtest.py --strategy bollinger_bands --symbol BTCUSD --timeframe 5m
+```
+
+Simulate the Supertrend + DEMA strategy on BTCUSD:
+```bash
+python run_backtest.py --strategy supertrend_dema --symbol BTCUSD --timeframe 15m
 ```
 *Results will save an HTML report in `reports/output/`.*
 
@@ -129,6 +135,13 @@ The `bollinger_bands` strategy is now configured for high-frequency mean reversi
 1.  **Entry**: Signals a **BUY** as soon as a candle closes below the **Lower Band** and a **SELL** as soon as it closes above the **Upper Band**.
 2.  **Exit (Band-to-Band)**: Long positions are automatically closed (and potentially flipped) when the price touches the **Upper Band**. Similarly for short positions at the **Lower Band**.
 3.  **Risk**: Uses a dynamic **ATR-based Stop Loss** to protect against runaway trends.
+
+## 🛡️ Strategy: Supertrend + DEMA
+
+The `supertrend_dema` strategy is a robust trend-following system configured for the 15m timeframe.
+
+1.  **Entry**: Signals a **BUY** when the price crosses above the 200-period **DEMA** while the **Supertrend** is bullish (Buy). It signals a **SELL** when the price is below the **DEMA** and the **Supertrend** is bearish (Sell).
+2.  **Exit / Risk**: The position's Stop Loss is strictly tied to the **Supertrend Signal Line**. A long trade exits exactly when the price drops below the Supertrend support, minimizing downside.
 
 ## ⚙️ Configuration & Tuning
 

@@ -84,6 +84,8 @@ with tab1:
         with c3:
             initial_capital = st.number_input("Initial Capital (USD)", value=10_000.0)
             max_risk_pct = st.slider("Max Risk (%)", 0.1, 2.0, 0.3) / 100
+            trailing_stop_enabled = st.checkbox("Enable Trailing Stop Loss", value=True)
+            config.TRAILING_STOP_ENABLED = trailing_stop_enabled
 
     strategy_options = _discover_strategies()
     strategy_name = st.selectbox("Select Strategy", strategy_options)

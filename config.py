@@ -33,7 +33,7 @@ SYMBOL = "BTCUSD"
 
 # Supported timeframes (Delta Exchange resolution codes)
 # 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 1d, 1w
-TIMEFRAME = "5m"
+TIMEFRAME = "15m"
 
 # ─────────────────────────────────────────────
 #  Backtest Date Range  (YYYY-MM-DD strings)
