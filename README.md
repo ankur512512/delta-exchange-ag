@@ -7,9 +7,10 @@ Delta Antigravity is a robust, event-driven algorithmic trading system designed 
 ## 🚀 Key Features
 
 *   **Live Trading Engine (`run_live.py`)**: Executes real-time trades on Delta Exchange India using HMAC-signed REST API calls. 
+*   **Paper Trading (DEMO Mode)**: Run the live trader securely using identical live market datasets against a simulated INR dummy balance without putting API funds at risk.
 *   **Backtest Suite (`run_backtest.py`)**: Simulate strategies on years of historical OHLCV data fetched directly from Delta's history servers.
 *   **Dynamic Position Sizing**: Automatically calculates trade size based on a fixed-risk percentage (e.g., risk 0.3% of portfolio per trade) using ATR-based stop losses.
-*   **Streamlit Dashboard**: A beautiful, dark-mode web interface to visualize backtest results, equity curves, and monitor live account status.
+*   **Streamlit Dashboard**: A beautiful, dark-mode web interface to visualize backtest results, equity curves, analyze Trade Journals, and monitor live account status.
 *   **Smart Signal Confirmation**: Strategy waits for an RSI "cross-back" (rebound) before entering during high volatility.
 
 ---
@@ -70,7 +71,7 @@ Create a `.env` file in the root directory and add your API credentials:
 ```ini
 DELTA_API_KEY="your_api_key_here"
 DELTA_API_SECRET="your_api_secret_here"
-MODE="LIVE"  # Change to "BACKTEST" to disable real orders via config
+MODE="DEMO"  # LIVE (Real money), DEMO (Paper trading), BACKTEST (Web dashboard)
 ```
 
 ---
@@ -90,16 +91,16 @@ python run_backtest.py --strategy supertrend_dema --symbol BTCUSD --timeframe 15
 *Results will save an HTML report in `reports/output/`.*
 
 ### Start Live Trading (Background)
-Once you are ready for 24/7 execution, use `nohup` to run the bot in the background and redirect output to a human-readable log:
+Once you are ready for 24/7 execution, use `nohup` to run the bot in the background. The script now natively builds cleanly formatted logs named specifically to your mode, strategy, and time automatically (e.g. `logs/demo_bollinger_bands_Mar28_12h00m.log`)!
 ```bash
-# Run in background with a clear name (e.g. bot_Mar23_11h59m.log)
-nohup python run_live.py --strategy bollinger_bands > logs/bot_$(date +"%b%d_%Hh%Mm").log 2>&1 &
+# Safely run in background
+nohup python run_live.py --strategy bollinger_bands &
 ```
 
 ### 📋 Monitoring & Logging
-*   **Live Console View**: `tail -f logs/bot_<DATE>.log`
-*   **Audit Historical Trades**: View `data/live_trades.csv` for a clean list of all successful exchange actions.
-*   **Check Performance**: Use the Streamlit dashboard for a visual summary of the logs.
+*   **Live Console View**: `tail -f logs/live_bollinger_bands_<DATE>.log`
+*   **Audit Historical Trades**: View the dynamically generated `data/live_bollinger*.csv` or `data/demo_*.csv` datasets.
+*   **Check Performance**: Use the `Trade Journals` tab inside the Streamlit dashboard for a robust analytical breakdown of these logs!
 
 ### Launch the Dashboard
 Visualize your trading hub and run backtests through a web interface:
@@ -122,9 +123,13 @@ The project includes a powerful web dashboard for both research and monitoring:
 
 ### 2. 📡 Live Monitor Tab
 *   **Real-Time Account Status**: View your available USD balance and open position details (contracts, entry price, unrealized P&L).
-*   **Bot Activity Tracking**: Monitor the latest actions taken by `run_live.py` via the local `live_trades.csv` log.
-*   **Live Charts**: Scatter plots of recent entries and exits on a price timeline.
+*   **Active Trade Mirroring**: Actively monitors your exchange status dynamically to show real-time Unrealized PNL without logging into the exchange mobile app.
 *   **Quick Refresh**: Sync with the Delta Exchange API at any time to get the latest portfolio status.
+
+### 3. 📔 Trade Journals Tab
+*   **Demo & Live Logs**: Natively scans your `data/` folder for historically completed Demo or Live API trades.
+*   **Backtest Analytical Mapping**: Analyzes real-world completed journals exactly identical to backtester projections (e.g. producing your actual live Win Rates, Sharp Ratios, Average PNLs, and Realized Drawdowns).
+*   **Dynamic Charting**: Automatically plots your live portfolio Equity Curve over time to visualize exactly how your bot has performed in the market.
 
 ---
 

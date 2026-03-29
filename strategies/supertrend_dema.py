@@ -172,6 +172,13 @@ class SupertrendDemaStrategy(BaseStrategy):
                 
         return final_signal
 
+    def get_state_str(self) -> str:
+        dema = f"DEMA: {self.last_dema:.1f}" if self.last_dema else "DEMA: --"
+        st = f"ST: {self.final_lowerband:.1f} (BUY)" if self.trend == 1 else f"ST: {self.final_upperband:.1f} (SELL)"
+        if not self._st_initialized:
+            st = "ST: Warming Up..."
+        return f" | {dema} | {st}"
+
     def describe(self) -> dict:
         return {
             "strategy":       self.name,

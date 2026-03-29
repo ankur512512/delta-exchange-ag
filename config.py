@@ -22,9 +22,14 @@ API_SECRET = os.getenv("DELTA_API_SECRET", "")
 #  "LIVE"     → place real orders via API (real money!)
 # ─────────────────────────────────────────────
 MODE = os.getenv("MODE", "BACKTEST").upper()
-VALID_MODES = {"BACKTEST", "LIVE"}
+VALID_MODES = {"BACKTEST", "LIVE", "DEMO"}
 if MODE not in VALID_MODES:
     raise ValueError(f"Invalid MODE '{MODE}'. Must be one of: {VALID_MODES}")
+
+# ─────────────────────────────────────────────
+#  Demo Mode Setting
+# ─────────────────────────────────────────────
+DEMO_INITIAL_CAPITAL = 20_000.0  # e.g. 20,000 INR dummy balance
 
 # ─────────────────────────────────────────────
 #  Default Instrument
@@ -33,26 +38,30 @@ SYMBOL = "BTCUSD"
 
 # Supported timeframes (Delta Exchange resolution codes)
 # 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 1d, 1w
-TIMEFRAME = "15m"
+TIMEFRAME = "4h"
 
 # ─────────────────────────────────────────────
 #  Backtest Date Range  (YYYY-MM-DD strings)
 # ─────────────────────────────────────────────
 from datetime import datetime, timedelta
-BACKTEST_START = "2024-09-22"
-BACKTEST_END   = "2025-09-24"
+BACKTEST_START = "2024-01-01"
+BACKTEST_END   = "2025-01-01"
 
 # ─────────────────────────────────────────────
 #  Risk Management
 # ─────────────────────────────────────────────
 # Maximum portfolio risk per trade (0.3% = 0.003)
-MAX_RISK_PER_TRADE = 0.003
+MAX_RISK_PER_TRADE = 0.015
 
 # Initial simulated portfolio value (USD) for backtesting
 INITIAL_CAPITAL = 10_000.0
 
 # Minimum trade size in BTC (Delta India minimum for some pairs)
 MIN_TRADE_SIZE_BTC = 0.001
+
+# Exchange Execution Fees
+MAKER_FEE_PCT = 0.0002   # 0.02%
+TAKER_FEE_PCT = 0.0006   # 0.06%
 
 # ─────────────────────────────────────────────
 #  Data Cache

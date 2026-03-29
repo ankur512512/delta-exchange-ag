@@ -44,6 +44,7 @@ class BollingerBandsStrategy(BaseStrategy):
         self.last_atr: float = 0.0
         self.last_upper: float = 0.0
         self.last_lower: float = 0.0
+        self.ema_trend: float = 0.0
         self.trailing_mult: float = getattr(config, "TRAILING_STOP_ATR_MULT", 1.5)
 
     def get_trailing_sl(self, side: str, current_sl: float, price: float, atr: float) -> float:
@@ -69,6 +70,7 @@ class BollingerBandsStrategy(BaseStrategy):
         self._lows.clear()
         self._prev_close = 0.0
         self.last_atr = 0.0
+        self.ema_trend = 0.0
 
     def on_candle(self, candle: dict) -> Signal:
         """Process one candle and return BUY / SELL / HOLD."""
@@ -79,6 +81,13 @@ class BollingerBandsStrategy(BaseStrategy):
         self._closes.append(close)
         self._highs.append(high)
         self._lows.append(low)
+        
+        # Update EMA 200
+        alpha = 2.0 / (200 + 1)
+        if self.ema_trend == 0.0:
+            self.ema_trend = close
+        else:
+            self.ema_trend = alpha * close + (1 - alpha) * self.ema_trend
 
         # Warmup Check
         warmup = max(self.bb_period, self.rsi_period + 1, self.atr_period + 1)
@@ -105,14 +114,17 @@ class BollingerBandsStrategy(BaseStrategy):
         use_rsi = getattr(config, "RSI_FILTER_ENABLED", True)
         os_level = getattr(config, "RSI_OVERSOLD", 35.0)
         ob_level = getattr(config, "RSI_OVERBOUGHT", 65.0)
+        
+        trend_up = close > self.ema_trend
+        trend_dn = close < self.ema_trend
 
-        if close < lower:
+        if close < lower and trend_up:
             # BUY if RSI is enabled and oversold, OR if RSI is disabled
             if not use_rsi or rsi < os_level:
                 final_signal = Signal.BUY
                 logger.info(f"BUY SIGNAL | Close: {close:.2f} < Lower: {lower:.2f} | RSI: {rsi:.2f}")
 
-        elif close > upper:
+        elif close > upper and trend_dn:
             # SELL if RSI is enabled and overbought, OR if RSI is disabled
             if not use_rsi or rsi > ob_level:
                 final_signal = Signal.SELL
@@ -143,6 +155,9 @@ class BollingerBandsStrategy(BaseStrategy):
             tr = max(highs[i]-lows[i], abs(highs[i]-prev_mid), abs(lows[i]-prev_mid))
             true_ranges.append(tr)
         return sum(true_ranges) / len(true_ranges) if true_ranges else 0.0
+
+    def get_state_str(self) -> str:
+        return f" | BB: [L: {self.last_lower:.1f} | U: {self.last_upper:.1f}] | ATR: {self.last_atr:.1f}"
 
     def describe(self) -> dict:
         return {

@@ -71,6 +71,9 @@ def compute_metrics(
     # ── Consecutive win/loss streaks ───────────────
     max_consec_wins, max_consec_losses = _streaks(pnls)
 
+    # ── Fees Paid ─────────────────────────────────
+    total_fees = sum([getattr(t, "fee", 0.0) for t in trades])
+
     return {
         # Summary
         "total_trades":        len(trades),
@@ -82,6 +85,7 @@ def compute_metrics(
         "initial_capital":     round(initial_capital, 2),
         "final_capital":       round(final_value, 2),
         "total_pnl":           round(total_pnl, 2),
+        "total_fees_paid":     round(total_fees, 2),
         "total_return_pct":    round(total_return, 2),
         "annualised_return_pct": round(annualised_return, 2),
 
@@ -198,7 +202,7 @@ def _empty_metrics(initial_capital: float) -> dict:
     return {
         "total_trades": 0, "winning_trades": 0, "losing_trades": 0,
         "win_rate_pct": 0, "initial_capital": initial_capital,
-        "final_capital": initial_capital, "total_pnl": 0,
+        "final_capital": initial_capital, "total_pnl": 0, "total_fees_paid": 0,
         "total_return_pct": 0, "annualised_return_pct": 0,
         "avg_trade_pnl": 0, "avg_winner": 0, "avg_loser": 0,
         "profit_factor": 0, "avg_holding_hours": 0,

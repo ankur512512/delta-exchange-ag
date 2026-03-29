@@ -113,6 +113,9 @@ class BacktestEngine:
                     size = sizer.calculate_size(entry_price, stop_loss)
 
                     if size > 0:
+                        entry_fee = size * entry_price * getattr(config, "TAKER_FEE_PCT", 0.0006)
+                        portfolio -= entry_fee
+                        
                         current_trade = trade_log.new_trade(
                             symbol=symbol,
                             side=side,
@@ -121,9 +124,11 @@ class BacktestEngine:
                             size=size,
                             stop_loss_price=stop_loss,
                         )
+                        current_trade.fee = entry_fee
+                        
                         logger.debug(
                             f"  OPEN {side.upper()} @ {entry_price:.2f} | "
-                            f"SL={stop_loss:.2f} | size={size:.6f} BTC | {ts}"
+                            f"SL={stop_loss:.2f} | Fee=${entry_fee:.2f} | {ts}"
                         )
 
             pending_signal = None   # consumed
@@ -133,12 +138,14 @@ class BacktestEngine:
                 sl_hit = self._check_stop_loss(current_trade, low_price, high_price)
                 if sl_hit:
                     sl_price = current_trade.stop_loss_price
-                    current_trade.close(ts, sl_price, "stop_loss", portfolio)
+                    exit_fee = current_trade.size * sl_price * getattr(config, "TAKER_FEE_PCT", 0.0006)
+                    
+                    current_trade.close(ts, sl_price, "stop_loss", portfolio, fee=exit_fee)
                     pnl = current_trade.pnl
                     portfolio += pnl
                     sizer.update_portfolio(portfolio)
                     logger.debug(
-                        f"  SL HIT @ {sl_price:.2f} | P&L={pnl:+.2f} | "
+                        f"  SL HIT @ {sl_price:.2f} | NetP&L={pnl:+.2f} | "
                         f"Portfolio=${portfolio:,.2f}"
                     )
                     current_trade = None
@@ -166,12 +173,13 @@ class BacktestEngine:
                 if opposite:
                     # Close at next open; store exit intent, execute in next iteration
                     # For simplicity: exit at close price of current candle
-                    current_trade.close(ts, close_price, "signal", portfolio)
+                    exit_fee = current_trade.size * close_price * getattr(config, "TAKER_FEE_PCT", 0.0006)
+                    current_trade.close(ts, close_price, "signal", portfolio, fee=exit_fee)
                     pnl = current_trade.pnl
                     portfolio += pnl
                     sizer.update_portfolio(portfolio)
                     logger.debug(
-                        f"  CLOSE (signal) @ {close_price:.2f} | P&L={pnl:+.2f} | "
+                        f"  CLOSE (signal) @ {close_price:.2f} | NetP&L={pnl:+.2f} | "
                         f"Portfolio=${portfolio:,.2f}"
                     )
                     current_trade = None
@@ -194,7 +202,8 @@ class BacktestEngine:
             last_row = candles.iloc[-1]
             last_price = float(last_row["close"])
             last_time  = last_row["time"]
-            current_trade.close(last_time, last_price, "end_of_data", portfolio)
+            exit_fee = current_trade.size * last_price * getattr(config, "TAKER_FEE_PCT", 0.0006)
+            current_trade.close(last_time, last_price, "end_of_data", portfolio, fee=exit_fee)
             portfolio += current_trade.pnl
             logger.info(f"  Force-closed open position at end of data @ {last_price:.2f}")
 

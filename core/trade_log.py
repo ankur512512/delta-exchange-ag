@@ -22,9 +22,10 @@ class TradeRecord:
     exit_price:     Optional[float]    = None
     exit_reason:    Optional[str]      = None   # "stop_loss" | "signal" | "end_of_data"
 
-    pnl:            float = 0.0          # absolute USD P&L
+    pnl:            float = 0.0          # absolute USD P&L (Net of Fees)
     pnl_pct:        float = 0.0          # P&L as % of position value at entry
     portfolio_value: float = 0.0         # portfolio value after this trade closes
+    fee:            float = 0.0          # Total entry & exit fees subtracted from PNL
 
     def close(
         self,
@@ -32,18 +33,22 @@ class TradeRecord:
         exit_price: float,
         exit_reason: str,
         portfolio_value: float,
+        fee: float = 0.0,
     ):
-        """Mark the trade as closed and compute P&L."""
+        """Mark the trade as closed and compute Net P&L."""
         self.exit_time  = exit_time
         self.exit_price = exit_price
         self.exit_reason = exit_reason
         self.portfolio_value = portfolio_value
+        self.fee = getattr(self, "fee", 0.0) + fee # Accumulate if partial entry fee existed
 
         if self.side == "long":
-            self.pnl = (exit_price - self.entry_price) * self.size
+            gross_pnl = (exit_price - self.entry_price) * self.size
         else:  # short
-            self.pnl = (self.entry_price - exit_price) * self.size
-
+            gross_pnl = (self.entry_price - exit_price) * self.size
+            
+        self.pnl = gross_pnl - self.fee
+        
         position_value = self.entry_price * self.size
         self.pnl_pct = (self.pnl / position_value * 100) if position_value > 0 else 0.0
 
@@ -76,6 +81,7 @@ class TradeRecord:
             "exit_time":       format_dt(self.exit_time),
             "exit_price":      self.exit_price,
             "exit_reason":     self.exit_reason,
+            "fee":             round(getattr(self, "fee", 0.0), 4),
             "pnl":             round(self.pnl, 4),
             "pnl_pct":         round(self.pnl_pct, 4),
             "portfolio_value": round(self.portfolio_value, 2),

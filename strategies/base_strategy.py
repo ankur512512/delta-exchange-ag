@@ -78,6 +78,14 @@ class BaseStrategy(ABC):
         """
         ...
 
+    def get_state_str(self) -> str:
+        """
+        Optional: Return a formatted string of the strategy's current 
+        internal indicator variables (e.g. ' | SMA: 100.5 | RSI: 42').
+        Used for rich CLI logging.
+        """
+        return ""
+
     def __str__(self) -> str:
         return self.name
 
